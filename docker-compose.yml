@@ -1,0 +1,41 @@
+version: '3.4'
+ 
+services:
+    SqlServerDb:
+        container_name: SqlServerContainer
+        image: mcr.microsoft.com/mssql/server:2017-latest
+        ports:
+            - 1433:1433
+            - 1434:1434
+        environment:
+            - ACCEPT_EULA=Y
+            - SA_PASSWORD=myStong_Password123#
+        depends_on:
+            - migrations
+        
+    migrations:
+        build: 
+            context: .
+            dockerfile: Migrations.Dockerfile
+    webapi:
+        container_name: WebApiContainer
+        image: ${DOCKER_REGISTRY-}webapisqlserverdockerdemo
+        ports:
+            - 7079:7079
+            - 5158:5158
+        build:
+          context: .
+          dockerfile: Dockerfile
+        depends_on:
+            - SqlServerDb
+            - migrations
+    ui:
+        container_name: react-app-container
+        image: react-app
+        build: 
+            context: .
+            dockerfile: React.Dockerfile
+        ports: 
+          - 3000:3000
+        depends_on:
+            - webapi
