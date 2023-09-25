@@ -25,32 +25,6 @@ namespace FoodOrdering.Controllers
             _userManager = userManager;
         }
 
-        //[HttpGet("{id:int}")]
-        //public async Task<ActionResult<IList<OrderResponseDto>>> GetOrderById(int id)
-        //{
-        //    var order = _context.Orders.Find(id);
-
-        //    if (order == null)
-        //    {
-        //        return NotFound(new ErrorResponseDto
-        //        {
-        //            ErrorMessages = new List<string> { $"Order with id `{id}` not found" }
-        //        });
-        //    }
-
-        //    var orderItems = _context.OrderItems.Where(oi => oi.Id == order.Id).ToList();
-        //    var user = await _userManager.GetUserAsync(HttpContext.User);
-
-        //    return Ok(new OrderResponseDto
-        //    {
-        //        Id = order.Id,
-        //        User = user,
-        //        Status = order.Status,
-        //        CreatedAt = order.CreatedAt,
-        //        OrderItems = orderItems
-        //    });
-        //}
-
         [HttpGet]
         public async Task<ActionResult<IList<OrderResponseDto>>> GetUserOrders()
         {
@@ -67,36 +41,7 @@ namespace FoodOrdering.Controllers
 
             foreach (var order in orders)
             {
-                results.Add(new OrderResponseDto
-                {
-                    Id = order.Id,
-                    Status = order.Status,
-                    CreatedAt = order.CreatedAt,
-                    OrderItems = order.Items.Select(oi =>
-                        new OrderItemResponseDto
-                        {
-                            OrderId = oi.Order.Id,
-                            FoodItem = new FoodItemResponseDto
-                            {
-                                Id = oi.FoodItem.Id,
-                                Name = oi.FoodItem.Name,
-                                AveragePrepationTime = oi.FoodItem.AveragePrepationTime,
-                                Description = oi.FoodItem.Description,
-                                Price = oi.FoodItem.Price,
-                                ImageUrl = oi.FoodItem.ImageUrl
-                            },
-                            Quantity = oi.Quantity
-                        }
-                    ).ToList(),
-                    TotalCost = CalculateOrderTotalCost(order),
-                    User = new UserResponseDto
-                    {
-                        Id = user.Id,
-                        Name = user.UserName,
-                        Email = user.Email,
-                        Credit = user.Credit
-                    }
-                });
+                results.Add(GetOrderResponse(order)); 
             }
 
             return Ok(results);
@@ -106,44 +51,22 @@ namespace FoodOrdering.Controllers
         public async Task<ActionResult<OrderResponseDto>> GetOrCreateCurrentOrder()
         {
             var order = await GetOrCreateCurrentOrderHelper();
-            var user = order.User;
-            var result = new OrderResponseDto
-            {
-                Id = order.Id,
-                Status = order.Status,
-                CreatedAt = order.CreatedAt,
-                OrderItems = order.Items.Select(oi =>
-                    new OrderItemResponseDto
-                    {
-                        OrderId = oi.Order.Id,
-                        FoodItem = new FoodItemResponseDto
-                        {
-                            Name = oi.FoodItem.Name,
-                            AveragePrepationTime = oi.FoodItem.AveragePrepationTime,
-                            Description = oi.FoodItem.Description,
-                            Price = oi.FoodItem.Price,
-                            ImageUrl = oi.FoodItem.ImageUrl
-                        },
-                        Quantity = oi.Quantity
-                    }
-                ).ToList(),
-                TotalCost = CalculateOrderTotalCost(order),
-                User = new UserResponseDto
-                {
-                    Id = user.Id,
-                    Name = user.UserName,
-                    Email = user.Email,
-                    Credit = user.Credit
-                }
-            };
-
-            return Ok(result);
+            return Ok(GetOrderResponse(order));
         }
 
         [HttpPost("addFoodItemToCurrentOrder")]
         public async Task<ActionResult<OrderResponseDto>> AddFoodItemToCurrentOrder([FromBody] AddFoodItemToOrderRequestDto foodItemRequest)
         {
             var order = await GetOrCreateCurrentOrderHelper();
+
+            if(order.Status != OrderStatus.NewOrder)
+            {
+                return BadRequest(new ErrorResponseDto
+                {
+                    ErrorMessages = new List<string> { "Cannot add items to an order that is not in the NewOrder state" }
+                });
+            }
+
             var orderItems = order.Items.ToList();
             var foodItem = await _context.FoodItems.FindAsync(foodItemRequest.FoodItemId);
 
@@ -171,38 +94,55 @@ namespace FoodOrdering.Controllers
                 .Include(o => o.User)
                 .First(o => o.Id == order.Id);
 
-            var user = order.User;
-            var result = new OrderResponseDto
+            return Ok(GetOrderResponse(order));
+        }
+
+        [HttpPost("subtractFoodItemToCurrentOrder")]
+        public async Task<ActionResult<OrderResponseDto>> subtractFoodItemToCurrentOrder([FromBody] AddFoodItemToOrderRequestDto foodItemRequest)
+        {
+            var order = await GetOrCreateCurrentOrderHelper();
+
+            if (order.Status != OrderStatus.NewOrder)
             {
-                Id = order.Id,
-                Status = order.Status,
-                CreatedAt = order.CreatedAt,
-                OrderItems = order.Items.Select(oi =>
-                    new OrderItemResponseDto
-                    {
-                        OrderId = oi.Order.Id,
-                        FoodItem = new FoodItemResponseDto
-                        {
-                            Id = oi.FoodItem.Id,
-                            Name = oi.FoodItem.Name,
-                            AveragePrepationTime = oi.FoodItem.AveragePrepationTime,
-                            Description = oi.FoodItem.Description,
-                            Price = oi.FoodItem.Price,
-                            ImageUrl = oi.FoodItem.ImageUrl
-                        },
-                        Quantity = oi.Quantity
-                    }
-                ).ToList(),
-                TotalCost = CalculateOrderTotalCost(order),
-                User = new UserResponseDto
+                return BadRequest(new ErrorResponseDto
                 {
-                    Id = user.Id,
-                    Name = user.UserName,
-                    Email = user.Email,
-                    Credit = user.Credit
+                    ErrorMessages = new List<string> { "Cannot remove items from an order that is not in the NewOrder state" }
+                });
+            }
+
+            var orderItems = order.Items.ToList();
+            var foodItem = await _context.FoodItems.FindAsync(foodItemRequest.FoodItemId);
+
+            var existingOrderItem = orderItems.SingleOrDefault(oi => oi.FoodItem.Id == foodItemRequest.FoodItemId);
+
+            if (existingOrderItem != null)
+            {
+                if (existingOrderItem.Quantity > foodItemRequest.Quantity)
+                {
+                    existingOrderItem.Quantity -= foodItemRequest.Quantity;
                 }
-            };
-            return Ok(result);
+                else
+                {
+                    _context.OrderItems.Remove(existingOrderItem);
+                }
+            }
+            else
+            {
+                return BadRequest(new ErrorResponseDto
+                {
+                    ErrorMessages = new List<string> { "Order item does not exist" }
+                });
+            }
+
+            _context.SaveChanges();
+
+            order = _context.Orders
+                .Include(o => o.Items)
+                    .ThenInclude(oi => oi.FoodItem)
+                .Include(o => o.User)
+                .First(o => o.Id == order.Id);
+
+            return Ok(GetOrderResponse(order));
         }
 
         [HttpGet("checkoutOrder")]
@@ -212,12 +152,13 @@ namespace FoodOrdering.Controllers
             var user = _context.Users
                 .First(u => u.Email == userEmail);
 
-            var order = _context.Orders
+            var orders = _context.Orders
                 .Include(c => c.User)
                 .Where(o => o.User.Id == user.Id)
                 .Include(o => o.Items)
                     .ThenInclude(oi => oi.FoodItem)
-                .First();
+                .ToList();
+            var order = orders.SingleOrDefault(o => !IsTerminalState(o.Status));
 
             if (order == null)
             {
@@ -238,156 +179,37 @@ namespace FoodOrdering.Controllers
 
             _context.SaveChanges();
 
-
-            var result = new OrderResponseDto
-            {
-                Id = order.Id,
-                Status = order.Status,
-                CreatedAt = order.CreatedAt,
-                OrderItems = order.Items.Select(oi =>
-                    new OrderItemResponseDto
-                    {
-                        OrderId = oi.Order.Id,
-                        FoodItem = new FoodItemResponseDto
-                        {
-                            Id = oi.FoodItem.Id,
-                            Name = oi.FoodItem.Name,
-                            AveragePrepationTime = oi.FoodItem.AveragePrepationTime,
-                            Description = oi.FoodItem.Description,
-                            Price = oi.FoodItem.Price,
-                            ImageUrl = oi.FoodItem.ImageUrl
-                        },
-                        Quantity = oi.Quantity
-                    }
-                ).ToList(),
-                TotalCost = totalCost,
-                User = new UserResponseDto
-                {
-                    Id = user.Id,
-                    Name = user.UserName,
-                    Email = user.Email,
-                    Credit = user.Credit
-                }
-            };
-            return Ok(result);
+            return Ok(GetOrderResponse(order));
         }
 
         [HttpGet("setOrderReady")]
         public async Task<ActionResult<OrderResponseDto>> SetOrderReady()
         {
             var order = await GetOrCreateCurrentOrderHelper();
-            var user = order.User;
             order.Status = OrderStatus.Ready;
-            var result = new OrderResponseDto
-            {
-                Id = order.Id,
-                Status = OrderStatus.Ready,
-                CreatedAt = order.CreatedAt,
-                OrderItems = order.Items.Select(oi =>
-                    new OrderItemResponseDto
-                    {
-                        OrderId = oi.Order.Id,
-                        FoodItem = new FoodItemResponseDto
-                        {
-                            Name = oi.FoodItem.Name,
-                            AveragePrepationTime = oi.FoodItem.AveragePrepationTime,
-                            Description = oi.FoodItem.Description,
-                            Price = oi.FoodItem.Price,
-                            ImageUrl = oi.FoodItem.ImageUrl
-                        },
-                        Quantity = oi.Quantity
-                    }
-                ).ToList(),
-                TotalCost = CalculateOrderTotalCost(order),
-                User = new UserResponseDto
-                {
-                    Id = user.Id,
-                    Name = user.UserName,
-                    Email = user.Email,
-                    Credit = user.Credit
-                }
-            };
+            _context.SaveChanges();
 
-            return Ok(result);
+            return Ok(GetOrderResponse(order));
         }
 
         [HttpGet("setOrderPickedUp")]
         public async Task<ActionResult<OrderResponseDto>> SetOrderPickedUp()
         {
             var order = await GetOrCreateCurrentOrderHelper();
-            var user = order.User;
             order.Status = OrderStatus.PickedUp;
-            var result = new OrderResponseDto
-            {
-                Id = order.Id,
-                Status = order.Status,
-                CreatedAt = order.CreatedAt,
-                OrderItems = order.Items.Select(oi =>
-                    new OrderItemResponseDto
-                    {
-                        OrderId = oi.Order.Id,
-                        FoodItem = new FoodItemResponseDto
-                        {
-                            Id = oi.FoodItem.Id,
-                            Name = oi.FoodItem.Name,
-                            AveragePrepationTime = oi.FoodItem.AveragePrepationTime,
-                            Description = oi.FoodItem.Description,
-                            Price = oi.FoodItem.Price,
-                            ImageUrl = oi.FoodItem.ImageUrl
-                        },
-                        Quantity = oi.Quantity
-                    }
-                ).ToList(),
-                TotalCost = CalculateOrderTotalCost(order),
-                User = new UserResponseDto
-                {
-                    Id = user.Id,
-                    Name = user.UserName,
-                    Email = user.Email,
-                    Credit = user.Credit
-                }
-            };
+            _context.SaveChanges();
 
-            return Ok(result);
+            return Ok(GetOrderResponse(order));
         }
 
         [HttpGet("setOrderCompleted")]
         public async Task<ActionResult<OrderResponseDto>> SetOrderCompleted()
         {
             var order = await GetOrCreateCurrentOrderHelper();
-            var user = order.User;
-            var result = new OrderResponseDto
-            {
-                Id = order.Id,
-                Status = OrderStatus.Completed,
-                CreatedAt = order.CreatedAt,
-                OrderItems = order.Items.Select(oi =>
-                    new OrderItemResponseDto
-                    {
-                        OrderId = oi.Order.Id,
-                        FoodItem = new FoodItemResponseDto
-                        {
-                            Id = oi.FoodItem.Id,
-                            Name = oi.FoodItem.Name,
-                            AveragePrepationTime = oi.FoodItem.AveragePrepationTime,
-                            Description = oi.FoodItem.Description,
-                            Price = oi.FoodItem.Price,
-                            ImageUrl = oi.FoodItem.ImageUrl
-                        },
-                        Quantity = oi.Quantity
-                    }
-                ).ToList(),
-                TotalCost = CalculateOrderTotalCost(order),
-                User = new UserResponseDto
-                {
-                    Id = user.Id,
-                    Name = user.UserName,
-                    Email = user.Email,
-                    Credit = user.Credit
-                }
-            };
-
-            return Ok(result);
+            order.Status = OrderStatus.Completed;
+            _context.SaveChanges();
+            
+            return Ok(GetOrderResponse(order));
         }
 
         private float CalculateOrderTotalCost(Order order)
@@ -437,6 +259,40 @@ namespace FoodOrdering.Controllers
                     .ThenInclude(oi => oi.FoodItem)
                 .Include(c => c.User)
                 .First();
+        }
+
+        private OrderResponseDto GetOrderResponse(Order order)
+        {
+            return 
+            new OrderResponseDto
+            {
+                Id = order.Id,
+                Status = order.Status,
+                CreatedAt = order.CreatedAt,
+                OrderItems = order.Items.Select(oi =>
+                new OrderItemResponseDto
+                {
+                    OrderId = oi.Order.Id,
+                    FoodItem = new FoodItemResponseDto
+                    {
+                        Id = oi.FoodItem.Id,
+                        Name = oi.FoodItem.Name,
+                        AveragePrepationTime = oi.FoodItem.AveragePrepationTime,
+                        Description = oi.FoodItem.Description,
+                        Price = oi.FoodItem.Price,
+                        ImageUrl = oi.FoodItem.ImageUrl
+                    },
+                    Quantity = oi.Quantity
+                }).ToList(),
+                TotalCost = CalculateOrderTotalCost(order),
+                User = new UserResponseDto
+                {
+                    Id = order.User.Id,
+                    Name = order.User.UserName,
+                    Email = order.User.Email,
+                    Credit = order.User.Credit
+                }
+            };
         }
     }
 }

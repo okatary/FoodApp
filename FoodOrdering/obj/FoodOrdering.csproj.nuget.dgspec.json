@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\mohamedomar\\source\\repos\\TahalufFoodApp\\FoodAppBackend\\FoodOrdering\\FoodOrdering.csproj": {}
+    "C:\\Users\\mohamedomar\\source\\repos\\FoodApp\\FoodOrdering\\FoodOrdering.csproj": {}
   },
   "projects": {
-    "C:\\Users\\mohamedomar\\source\\repos\\TahalufFoodApp\\FoodAppBackend\\FoodOrdering\\FoodOrdering.csproj": {
+    "C:\\Users\\mohamedomar\\source\\repos\\FoodApp\\FoodOrdering\\FoodOrdering.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\mohamedomar\\source\\repos\\TahalufFoodApp\\FoodAppBackend\\FoodOrdering\\FoodOrdering.csproj",
+        "projectUniqueName": "C:\\Users\\mohamedomar\\source\\repos\\FoodApp\\FoodOrdering\\FoodOrdering.csproj",
         "projectName": "FoodOrdering",
-        "projectPath": "C:\\Users\\mohamedomar\\source\\repos\\TahalufFoodApp\\FoodAppBackend\\FoodOrdering\\FoodOrdering.csproj",
+        "projectPath": "C:\\Users\\mohamedomar\\source\\repos\\FoodApp\\FoodOrdering\\FoodOrdering.csproj",
         "packagesPath": "C:\\Users\\mohamedomar\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\mohamedomar\\source\\repos\\TahalufFoodApp\\FoodAppBackend\\FoodOrdering\\obj\\",
+        "outputPath": "C:\\Users\\mohamedomar\\source\\repos\\FoodApp\\FoodOrdering\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\mohamedomar\\AppData\\Roaming\\NuGet\\NuGet.Config",

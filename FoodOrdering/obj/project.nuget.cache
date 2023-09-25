@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "+yBtubTehVL7wX0IV74juJnPat1qbx3de1dNuGUyrJ2ljIDdPRR4/nTXoUdW3R9c8sxa5Vl9x9rcg2Vb/BlM4Q==",
+  "dgSpecHash": "0PVrdntDcVXr9EOW/JdrxgxAPnDAYJ6/aGEJXH/Ly/ihWLLKJECpcNoWAfM+0l0wyosnHXVBY8WAnsrT6iP/QQ==",
   "success": true,
-  "projectFilePath": "C:\\Users\\mohamedomar\\source\\repos\\TahalufFoodApp\\FoodAppBackend\\FoodOrdering\\FoodOrdering.csproj",
+  "projectFilePath": "C:\\Users\\mohamedomar\\source\\repos\\FoodApp\\FoodOrdering\\FoodOrdering.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\mohamedomar\\.nuget\\packages\\azure.core\\1.24.0\\azure.core.1.24.0.nupkg.sha512",
     "C:\\Users\\mohamedomar\\.nuget\\packages\\azure.identity\\1.6.0\\azure.identity.1.6.0.nupkg.sha512",

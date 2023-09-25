@@ -15,4 +15,4 @@ export const { setOrder } = orderSlice.actions
 
 export default orderSlice.reducer
 
-export const selectCurrentOrder = (state) => state.auth.order
+export const selectCurrentOrder = (state) => state.order.order

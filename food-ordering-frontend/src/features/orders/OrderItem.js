@@ -2,8 +2,27 @@ import Grid from '@mui/material/Unstable_Grid2';
 import Card from '@mui/material/Card';
 import Image from 'mui-image'
 import Typography from '@mui/material/Typography';
+import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
+import { useAddFoodItemToCurrentOrderMutation, useSubtractFoodItemToCurrentOrderMutation } from './orderApiSlice';
 
-const OrderItem = ({orderItem}) => {
+const OrderItem = ({orderItem, orderStatus, setFakeLoading}) => {
+
+
+    const [addOrder, orderAfterAdding] = useAddFoodItemToCurrentOrderMutation()
+    const [subtractOrder, orderAfterSubracting] = useSubtractFoodItemToCurrentOrderMutation()
+
+    const handleAdd = async (e, foodItemId) => {
+        await addOrder({ foodItemId, quantity: 1 }).unwrap()
+        setFakeLoading(true)
+        setTimeout(() => {setFakeLoading(false)}, 1000)
+    }
+    
+    const handleSubtract = async (e, foodItemId) => {
+        await subtractOrder({ foodItemId, quantity: 1 }).unwrap()
+        setFakeLoading(true)
+        setTimeout(() => {setFakeLoading(false)}, 1000)
+    }
 
     const content = (
         <Grid container  xs={12}>
@@ -25,9 +44,30 @@ const OrderItem = ({orderItem}) => {
                         </Typography>
                     </Grid>
                     <Grid xs={2} display="flex"  justifyContent="center" alignItems="center">
-                        <Typography variant="body1" color="text.primary">
-                            {orderItem.quantity} x ${orderItem.foodItem.price}
-                        </Typography>
+                        <Box sx={{
+                             display: 'row',
+                             flexDirection: 'column',
+                             alignItems: 'end',
+                             width: '100vw',
+                             mt:2
+                        }}>
+                            {(orderStatus && orderStatus == 1) && <>
+                                <Button 
+                                    size="small"
+                                    onClick={(e) => handleSubtract(e, orderItem.foodItem.id)}>
+                                        -
+                                </Button>
+                                    {orderItem?.quantity}
+                                <Button 
+                                    size="small"
+                                    onClick={(e) => handleAdd(e, orderItem.foodItem.id)}>
+                                        +
+                                </Button>
+                            </>}
+                            <Typography variant="body1" color="text.primary">
+                                {orderItem.quantity} x ${orderItem.foodItem.price}
+                            </Typography>
+                        </Box>
                     </Grid>
                 </Grid>
             </Card>

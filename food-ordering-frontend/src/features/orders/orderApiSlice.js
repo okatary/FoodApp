@@ -13,6 +13,13 @@ export const ordersApiSlice = apiSlice.injectEndpoints({
                 body: { foodItemId, quantity }
             })
         }),
+        subtractFoodItemToCurrentOrder: builder.mutation({
+            query: ({ foodItemId, quantity }) => ({
+                url: '/orders/subtractFoodItemToCurrentOrder',
+                method: 'POST',
+                body: { foodItemId, quantity }
+            })
+        }),
         getCurrentOrder: builder.query({
             query: () => '/orders/getCurrentOrder',
             keepUnusedDataFor: 1,
@@ -27,6 +34,7 @@ export const ordersApiSlice = apiSlice.injectEndpoints({
 export const {
     useGetAllUserOrdersQuery,
     useAddFoodItemToCurrentOrderMutation,
+    useSubtractFoodItemToCurrentOrderMutation,
     useGetCurrentOrderQuery,
     useLazyCheckoutOrderQuery
 } = ordersApiSlice 

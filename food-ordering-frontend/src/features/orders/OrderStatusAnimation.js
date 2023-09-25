@@ -4,6 +4,7 @@ import readyAnimation from "../../animations/readyAnimation.json";
 import pickedUpAnimation from "../../animations/pickedUpAnimation.json";
 import completedAnimation from "../../animations/completedAnimation.json";
 import { TypeAnimation } from 'react-type-animation';
+import { Typography } from "@mui/material";
 
 
 const OrderStatusAnimation = ({order}) => {
@@ -35,7 +36,6 @@ const OrderStatusAnimation = ({order}) => {
         return obj.id === order?.status
       })
 
-
     return <>
             {currentStatusObj ?
             <><Lottie
@@ -44,17 +44,8 @@ const OrderStatusAnimation = ({order}) => {
                 }}
                 animationData={currentStatusObj.animation}
                 loop={true} />
-                <TypeAnimation
-                    sequence={[
-                        // Same substring at the start will only be typed once, initially
-                        currentStatusObj.text,
-                        1000,
-                        '',
-                        1000
-                    ]}
-                    speed={50}
-                    style={{ fontSize: '2em', color: 'grey' }}
-                    repeat={Infinity}/></> : <></>}
+                <Typography variant="h6">{currentStatusObj.text}</Typography>
+                </> : <></>}
             </>
 }
 export default OrderStatusAnimation

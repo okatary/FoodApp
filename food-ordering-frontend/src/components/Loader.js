@@ -5,7 +5,7 @@ const Loader = ({isLoading}) => {
         sx={{ color: '#fff', zIndex: (theme) => theme.zIndex.drawer + 1 }}
         open={isLoading}
     >
-        <img src={'tahalufLogo.png'} className="App-logo" alt="logo"/>
+        <img src={'tahalufLogo.png'} className="App-logo" alt="logo" />
     </Backdrop>
 }
 

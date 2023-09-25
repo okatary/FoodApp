@@ -1,7 +1,6 @@
 import { useState } from "react"
-import { useDispatch } from 'react-redux'
+import { useSelector } from 'react-redux'
 import { useAddFoodItemToCurrentOrderMutation } from '../orders/orderApiSlice';
-import { setOrder } from '../orders/orderSlice'
 import Grid from '@mui/material/Unstable_Grid2';
 import Card from '@mui/material/Card';
 import CardActions from '@mui/material/CardActions';
@@ -10,16 +9,18 @@ import CardMedia from '@mui/material/CardMedia';
 import Button from '@mui/material/Button';
 import Typography from '@mui/material/Typography';
 import Box from '@mui/material/Box';
+import {selectCurrentOrder} from '../orders/orderSlice' 
+
 
 const FoodItem = ({foodItem, setFakeLoading, setAddedOrderItem}) => {
+    
+    const order = useSelector(selectCurrentOrder)
     const [quantity, setQuantity] = useState(1);
-    const dispatch = useDispatch()
     const [addOrder, result] = useAddFoodItemToCurrentOrderMutation()
 
  
     const handleSubmit = async (e, foodItemId, quantity) => {
         e.preventDefault()
-        console.log("foodItem: ", foodItem )
         try {
             setFakeLoading(true)
             setAddedOrderItem({
@@ -27,8 +28,7 @@ const FoodItem = ({foodItem, setFakeLoading, setAddedOrderItem}) => {
                 quantity
             })
             setTimeout(() => {setFakeLoading(false)}, 500)
-            const order = await addOrder({ foodItemId, quantity }).unwrap()
-            dispatch(setOrder(order))
+            await addOrder({ foodItemId, quantity }).unwrap()
         } catch (err) {
 
         }
@@ -58,6 +58,9 @@ const FoodItem = ({foodItem, setFakeLoading, setAddedOrderItem}) => {
                     </Typography>
                 </CardContent>
                 <CardActions>
+                <Box>
+                    <Typography variant="h4">${foodItem.price}</Typography>
+                </Box>
                 <Box sx={{
                         display: 'flex',
                         flexDirection: 'column',
@@ -67,25 +70,28 @@ const FoodItem = ({foodItem, setFakeLoading, setAddedOrderItem}) => {
                         pr:2,
                         pb:2
                     }}>
-                        <Box>
+                        
+                        { (order == null || order.status == 1) && <>
+                            <Box>
+                                <Button 
+                                    size="small"
+                                    onClick={(e) => quantity > 1? setQuantity(quantity - 1): ()=>{} }>
+                                        -
+                                </Button>
+                                    {quantity}
+                                <Button 
+                                    size="small"
+                                    onClick={(e) => setQuantity(quantity + 1)}>
+                                        +
+                                </Button>
+                            </Box>
                             <Button 
-                                size="small"
-                                onClick={(e) => quantity > 1? setQuantity(quantity - 1): ()=>{} }>
-                                    -
+                                size="medium"
+                                variant="contained"
+                                onClick={(e) => handleSubmit(e, foodItem.id, quantity)}>
+                                    Add To Order
                             </Button>
-                                {quantity}
-                            <Button 
-                                size="small"
-                                onClick={(e) => setQuantity(quantity + 1)}>
-                                    +
-                            </Button>
-                        </Box>
-                        <Button 
-                            size="medium"
-                            variant="contained"
-                            onClick={(e) => handleSubmit(e, foodItem.id, quantity)}>
-                                Add To Order
-                        </Button>
+                        </>}
                     </Box>
                 </CardActions>
             </Card>

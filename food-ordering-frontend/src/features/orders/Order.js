@@ -11,6 +11,7 @@ import OrderItem from './OrderItem'
 import OrderStatusAnimation from './OrderStatusAnimation'
 import Loader from '../../components/Loader'
 import { setCredit } from '../auth/authSlice' 
+import { setOrder } from './orderSlice' 
 
 const Order = () => {
     const {
@@ -31,11 +32,19 @@ const Order = () => {
     useEffect(() => {
         setFakeLoading(true)
         setTimeout(() => {setFakeLoading(false)}, 1000)
-        const interval = setInterval(() => refetch(), 5000);
+        const interval = setInterval(() => {
+            refetch()
+            dispatch(setOrder(order))
+        }, 2000);
         return () => {
             clearInterval(interval);
            };
       }, []);
+
+      useEffect(() => {
+        let credit = order?.user?.credit == null || order?.user?.credit == undefined  ? 0 : order?.user?.credit
+        dispatch(setCredit({credit}))
+      }, [order]);
 
       const orderCheckoutHandler = () => {
         if(order.user.credit < order.totalCost){
@@ -47,7 +56,7 @@ const Order = () => {
             refetch()
             dispatch(setCredit( {credit: order?.user?.credit - order.totalCost} ))
             setFakeLoading(true)
-            setTimeout(() => {setFakeLoading(false)}, 3000)
+            setTimeout(() => {setFakeLoading(false)}, 1000)
         }
       }
 
@@ -75,9 +84,13 @@ const Order = () => {
                                 </Alert>: null}
                         {order?.orderItems.map((item, i) => {
                             return (
-                                <OrderItem orderItem = {item}/>    
+                                <OrderItem orderItem={item} setFakeLoading={setFakeLoading} orderStatus={order?.status}/>    
                             )
                         })}
+
+                        {order?.orderItems.length == 0 &&
+                            <Alert severity="info" sx = {{ m:1, p:2, width:'100vw'}}><Typography variant='h6'>Cart is Empty!</Typography></Alert> 
+                        }
                         <Box sx={{
                             display: 'flex',
                             flexDirection: 'column',
@@ -89,7 +102,7 @@ const Order = () => {
                             <Typography variant="h5" color="text.primary">
                                     Total: ${order?.totalCost}
                             </Typography>
-                            {order?.status == 1? 
+                            {(order?.status == 1 && order?.orderItems?.length > 0) ? 
                             <Button 
                                 size="large"
                                 variant="contained"
